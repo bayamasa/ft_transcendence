@@ -1,0 +1,618 @@
+openapi: 3.0.3
+info:
+  description: "ft_transcendenceのAPI設計"
+  title: "transcendence API"
+  version: "v3.0"
+paths:
+  /users:
+    get:
+      description: 全ユーザーの情報を返します
+      responses:
+        200:
+          description: 成功時のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usersList:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/userIdAndName"
+        500:
+          description: 失敗時のレスポンス
+  /users/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: integer
+    get:
+      description: ユーザーIDの情報を返します
+      responses:
+        200:
+          description: ユーザーが存在した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userName:
+                    type: string
+                    example: "LabPixel"
+                  isActive:
+                    description: ユーザーがアクティブかどうかの判別
+                    type: boolean
+                    example: True
+                  statistics:
+                    $ref: '#/components/schemas/statistics'
+                  friends:
+                    description: フレンド一覧
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/userIdAndName'
+                  blockingUsers:
+                    description: ブロックしているユーザー一覧
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/userIdAndName'
+                      
+        400:
+          description: ユーザーが存在しない際のレスポンス
+        500:
+          description: SQLなどのサーバーエラー
+  /my-account:
+    parameters:
+      - in: query
+        name: userId
+        required: True
+        schema:
+          type: integer
+      - in: query
+        required: True
+        name: APIKey
+        schema:
+          type: string
+          description: APIキー
+    get:
+      description: 自身のプライベートなアカウント情報を取得する
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mail:
+                    description: メールアドレス
+                    type: string
+                    example: "labpixel@gmail.com"
+                  password:
+                    description: 暗号化されたパスワード
+                    type: string
+                    example: "PO0934FSaH43P43O43oeG54eg6E6h5SP="
+    post:
+      description: 自身のプライベートなアカウント情報を作成する
+      parameters:
+        - in: query
+          name: email
+          required: True
+          description: メールアドレス
+          schema:
+            type: integer
+        - in: query
+          name: password
+          required: True
+          description: 暗号化されたパスワード
+          schema:
+            type: integer
+      responses:
+        200:
+          description: 正常にセットアップできた
+        400:
+          description: パラメータが不正
+        500:
+          description: サーバーエラー
+    patch:
+      description: 自身のプライベートなアカウント情報をアップデートする
+      parameters:
+        - in: query
+          name: email
+          required: True
+          description: メールアドレス
+          schema:
+            type: integer
+        - in: query
+          name: password
+          required: True
+          description: 暗号化されたパスワード
+          schema:
+            type: integer
+        - in: query
+          name: additionalBlockUsre
+          required: False
+          description: 追加でブロックするユーザー
+          schema:
+            type: integer
+            example: 24
+      responses:
+        200:
+          description: 正常にアップデートができた
+        400:
+          description: 不正なパラメーター
+        500:
+          description: サーバーエラー
+    put:
+      description: 自身のアイコンの変更等を行う
+      parameters:
+        - in: query
+          name: image
+          required: true
+          description: アイコン
+          schema:
+            $ref: "#/components/schemas/image"
+      responses:
+        200:
+          description: 正常にアップデートができた
+        400:
+          description: 不正なパラメーター
+        500:
+          description: サーバーエラー
+  /direct-messages:
+    parameters:
+      - in: query
+        name: userId
+        required: True
+        schema:
+          type: integer
+      - in: query
+        required: True
+        name: APIKey
+        schema:
+          type: string
+          description: APIキー
+    get:
+      description: ユーザーが利用可能なDMのリストを返す
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                description: 利用可能なDMのリスト
+                type: array
+                items:
+                  $ref: "#/components/schemas/usersList"
+        400:
+          description: ユーザーが存在しない
+        500:
+          description: サーバーエラー
+    post:
+      description: ユーザーが新たなDMを作成する
+      parameters:
+        - in: query
+          name: toUserId
+          description: 相手のユーザーID
+          schema:
+            type: integer
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        400:
+          description: 不正なパラメーター
+        500:
+          description: サーバーエラー
+  /direct-messages/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        description: DMの相手のID
+        required: true
+        schema:
+          type: integer
+      - in: query
+        required: True
+        name: APIKey
+        description: 自身のAPIキー
+        schema:
+          type: string
+    get:
+      description: 任意のユーザーとのDMの情報を返す
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                description: DMの相手のユーザーを返す
+                type: object
+                properties:
+                  userIdAndName:
+                    $ref: "#/components/schemas/userIdAndName"
+    post:
+      description: 任意のユーザーにDMを送信する
+      parameters:
+        - in: query
+          name: message
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        500:
+          description: 失敗した際のレスポンス
+  /get-direct-message/{userId}:
+    get:
+      parameters:
+        - in: path
+          name: userId
+          description: DMの相手のユーザーID
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: dmNumber
+          description: DM１件ごとに振られた番号
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dmNumber:
+                    type: integer
+                    description: DM１件ごとに振られた番号
+                    example: 1
+                  message:
+                    type: string
+                    description: メッセージ
+                    example: "こんにちわ"
+  /channel:
+    parameters:
+      - in: query
+        required: true
+        name: channelType
+        description: チャンネルのタイプ（１ 公開、２ パスワード、３、非公開）
+        schema:
+          type: integer
+      - in: query
+        required: false
+        name: APIKey
+        description: 非公開の部屋を検索する際に利用する
+        schema:
+          type: string
+    get:
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/channelTypeAndName'
+        400:
+          description: チャンネルタイプが存在しない際のレスポンス
+        500:
+          description:
+            失敗した際のレスポンス
+    post:
+      parameters:
+        - in: query
+          required: true
+          name: APIKey
+          description: チャンネルのadminに作成者をするために利用する
+          schema:
+            type: string
+        - in: query
+          required: true
+          name: channelType
+          description: チャンネルのタイプ（１ 公開、２ パスワード、３、非公開）
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          required: false
+          name: channelPassword
+          description: チャンネルをパスワード保護にする際は必要
+          schema:
+            type: string
+            example: P@$$w0rD
+        - in: query
+          required: true
+          name: channelMembers
+          description: チャンネルのメンバー
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/userIdAndName'
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        400:
+          description: 失敗した際のレスポンス。不正なパラメーターなど。
+        500:
+          description: サーバーのエラー
+  /channel-info/{channelId}:
+    parameters:
+      - in: path
+        name: channelId
+        required: true
+        description: チャンネルのID
+        schema:
+          type: integer
+    get:
+      parameters:
+        - in: query
+          name: APIKey
+          required: true
+          description: アクセス権があるかどうかを確認する
+          schema:
+            type: string
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channelMessages:
+                    $ref: '#/components/schemas/channelInfomation'
+    patch:
+      parameters:
+        - in: query
+          required: false
+          name: APIKey
+          description: チャンネルの編集権限があるかを確認するために利用する
+          schema:
+            type: string
+        - in: query
+          required: false
+          name: channelAdmin
+          description: チャンネルのアドミニストレータを他の人に移行する際に利用する
+          schema:
+            $ref: '#/components/schemas/userIdAndName'
+        - in: query
+          required: false
+          name: channelType
+          description: チャンネルのタイプ（１ 公開、２ パスワード、３、非公開）
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          required: false
+          name: channelPassword
+          description: チャンネルをパスワード保護にする際は必要
+          schema:
+            type: string
+            example: P@$$w0rD
+        - in: query
+          required: false
+          name: channelMembers
+          description: チャンネルに追加するメンバー
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/userIdAndName'
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        400:
+          description: 不正なパラメーターなどで失敗した際のレスポンス
+        500:
+          description: サーバーエラー
+    delete:
+      parameters:
+        - in: query
+          required: false
+          name: APIKey
+          description: チャンネルの編集権限があるかを確認するために利用する
+          schema:
+            type: string
+        - in: query
+          required: false
+          name: channelMembers
+          description: チャンネルから追放するメンバー
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/userIdAndName'
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        400:
+          description: 指定したユーザーがチャンネルにいないなどのエラー
+        500:
+          description: サーバーエラー
+  /channel/{channelId}:
+    parameters:
+      - in: path
+        name: channelId
+        required: true
+        description: チャンネルのID
+        schema:
+          type: integer
+      - in: query
+        name: channelPassword
+        required: false
+        description: 鍵がかかっているチャンネルの場合は必要
+        schema:
+          type: string
+    get:
+      parameters:
+        - in: query
+          name: messageId
+          required: false
+          description: 取得するメッセージのID、渡されなかった場合最後のメッセージを返す
+          schema:
+            type: integer
+            example: 42
+        - in: query
+          name: APIKey
+          required: true
+          description: 参加権限があるかどうかを確認する
+          schema:
+            type: string
+      responses:
+        200:
+          description: 成功した際のレスポンス
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channelMessages:
+                    $ref: '#/components/schemas/channelMessages'
+        400:
+          description: 権限がなかったりで失敗した際のレスポンス
+        500:
+          description: サーバーエラー
+    post:
+      parameters:
+        - in: query
+          name: APIKey
+          required: true
+          description: APIキー
+          schema:
+            type: string
+        - in: query
+          name: message
+          required: true
+          description: メッセージ
+          schema:
+            type: string
+            example: "こんにちわ"
+        - in: query
+          name: userIdAndName
+          required: true
+          description: ユーザー情報
+          schema:
+            $ref: '#/components/schemas/userIdAndName'
+      responses:
+        200:
+          description: 成功した際のレスポンス
+        400:
+          description: パラメーターがおかしいなどのエラー
+        500:
+          description: サーバーエラー
+
+components:
+  schemas:
+    image:
+      type: object
+      properties:
+        name:
+          description: 画像の名前
+          type: string
+          example: hoge.hpg
+        data:
+          description: 画像データをBase64したもの
+          type: string
+    channelInfomation:
+      type: object
+      properties:
+        admin:
+          description: アドミニストレータの情報
+          type: object
+          properties:
+            userIdAndName:
+              $ref: '#/components/schemas/userIdAndName'
+            channelId:
+              description: チャンネルID
+              example: 1
+              type: integer
+            channelName:
+              description: チャンネルの名前
+              type: string
+              example: "LabPixelと愉快な仲間たち"
+            joiningUsers:
+              description: チャンネルに参加してるユーザーのリスト
+              type: array
+              items:
+                $ref: '#/components/schemas/userIdAndName'
+            mutedUsers:
+              description: チャンネルでミュートされたユーザー
+              type: array
+              items:
+                $ref: '#/components/schemas/userIdAndName'
+            bannedUsers:
+              description: チャンネルからBANされたユーザー
+              type: array
+              items:
+                $ref: '#/components/schemas/userIdAndName'
+              
+    channelMessages:
+      type: object
+      properties:
+        messageId:
+          description: チャンネルのメッセージID
+          type: integer
+          example: 42
+        from:
+          description: メッセージの送信元のユーザーID
+          type: object
+          properties:
+            userIdAndName:
+              $ref: '#/components/schemas/userIdAndName' 
+        message:
+          description: メッセージ
+          type: string
+          example: "こんにちわ"
+    channelTypeAndName:
+      description: 任意のタイプのチャンネルのリスト
+      properties:
+        channelId:
+          description: チャンネルID
+          example: 1
+          type: integer
+        channelName:
+          description: チャンネルの名前
+          type: string
+          example: "LabPixelと愉快な仲間たち"
+    userIdAndName:
+      description: ユーザーのIDと名前のオブジェクト
+      properties:
+        userId:
+          description: "ユーザーID"
+          type: integer
+          example: 1
+        userName:
+          type: string
+          example: "LabPixel"
+        userIcon:
+          description: ユーザーアイコンが格納されているパス
+          type: string
+          example: /assets/icon/1.ico
+    usersList:
+      description: 任意のユーザー情報を格納するリスト
+      type: object
+      properties:
+        userId:
+          description: ユーザーID
+          type: integer
+          example: 1
+        userName:
+          description: ユーザー名
+          type: string
+          example: "LabPixel"
+    statistics:
+      description: 勝率などを格納するオブジェクト
+      type: object
+      properties:
+        wins:
+          description: 勝利数
+          type: integer
+          example: 10
+        loses:
+          description: 敗北数
+          type: integer
+          example: 10

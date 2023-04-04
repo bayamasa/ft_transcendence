@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/src/.env
+    environment:
+      ENV_VARIABLE: ${ENV_VARIABLE}
+      NEXT_PUBLIC_ENV_VARIABLE: ${NEXT_PUBLIC_ENV_VARIABLE}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    ports:
+      - 3000:3000
+      - 6006:6006
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3000
+    environment:
+      POSTGRES_DB: ft_transcendence
+      POSTGRES_USER: ft_transcendence
+      POSTGRES_PASSWORD: ft_transcendence
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/test:/app/test
+      - ./backend/prisma:/app/prisma
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:15-bullseye
+    container_name: db
+    expose:
+      - 5432
+    environment:
+      POSTGRES_DB: ft_transcendence
+      POSTGRES_USER: ft_transcendence
+      POSTGRES_PASSWORD: ft_transcendence
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - database:/var/lib/postgresql/data
+volumes:
+  database:
