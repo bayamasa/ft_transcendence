@@ -1,5 +1,5 @@
 # https://nodejs.org/ja LTSは18.15
-FROM node:18.15-buster-slim
+FROM node:19.9-buster-slim
 
 RUN apt-get update -y && apt-get install -y openssl \
     procps  
